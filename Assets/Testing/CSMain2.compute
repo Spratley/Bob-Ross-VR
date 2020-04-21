@@ -1,0 +1,389 @@
+﻿// Each #kernel tells which function to compile; you can have many kernels
+//#pragma kernel CSMain2
+#pragma kernel InitVelocityField
+#pragma kernel Advect
+#pragma kernel AdvectC
+#pragma kernel GaussSeidelIteration
+#pragma kernel Project1_Divergence
+#pragma kernel Project3_ApplyPressure
+#pragma kernel ConvertDensityToColour
+#pragma kernel AddDensityToLocation
+#pragma kernel InitDensity
+
+//#pragma kernel Diffuse
+//#pragma kernel Project
+//#pragma kernel SetBoundary
+
+
+float InputX;
+float InputY;
+
+float InputXP;
+float InputYP;
+// Velocity field, Vx,Vy,Vz
+Texture2D<float3> Velocity_in;
+SamplerState samplerVelocity_in; // unity automatically assigns this when "sampler" is in front of the texture name
+RWTexture2D<float3> Velocity_out;
+
+/* Working velocity field, Vx0, Vy0, Vz0 */
+Texture2D<float3> VelocityWorking_in;
+RWTexture2D<float3> VelocityWorking_out;
+
+RWStructuredBuffer<float> myBuffer;
+
+
+/* Density, density & temp s0*/
+Texture2D<float4> Density_in;
+SamplerState samplerDensity_in;
+RWTexture2D<float4> Density_out;// unity automatically assigns this when "sampler" is in front of the texture name
+RWTexture2D<float4> Colour_out;// unity automatically assigns this when "sampler" is in front of the texture name
+
+Texture2D<float4> BrushTexture_in;
+SamplerState samplerBrushTexture_in;
+RWTexture2D<float4> BrushTexture_out;
+
+float dt;
+/* parameters */
+float DiffusionConstant_a;
+float DiffusionConstant_c;
+
+float ViscosityConstant;
+
+/* divergence */
+RWTexture2D<float3> Divergence_out;
+/* pressure field */
+Texture2D<float> Pressure_in;
+RWTexture2D<float> Pressure_out;
+
+/* THESE ARE FOR LATER */
+// /* Forces, Fx,Fy,Fz */
+// Texture2D<float> Forces_in;
+
+// /* Colour */
+// Texture2D<half4> Colour_in;
+// SamplerState samplerColour_in;
+// RWTexture2D<half4> Colour_out;
+
+
+
+
+
+
+/* can probably use a pigment texture here as well for K,S */
+
+// Create a RenderTexture with enableRandomWrite flag and set it
+// with cs.SetTexture
+// RWTexture2D<float4> Result;
+ float theTime;
+
+// [numthreads(8,8,1)]
+// void CSMain2 (uint3 id : SV_DispatchThreadID)
+// {
+//     // TODO: insert actual code here!
+//     float cx = 128.0f;
+//     float cy = 128.0f;
+//     float r = 50.0f;
+//     float d = 0.01f*(sqrt((id.x - cx)*(id.x - cx) + (id.y - cy)*(id.y - cy)) - r)*sin(theTime);
+
+//     Result[id.xy] = float4(d,d,d,0);//id.x & id.y, (id.x & 15)/15.0, (id.y & 15)/15.0, 0.0);
+// }
+
+//in the .cs file the algorithm needs to look like this:
+
+    // 1. add forces
+    //  - add in the forces from mouse and external boundaries
+    // 2. step velocity field
+    //  - Diffuse Velocity Field  (V_in, Viscosity -> V_out)
+    //  - Advect Velocity Field  (V_out -> V_in)
+    //  - Project Velocity Field (V_in-> V_out)
+
+    // 3. step density field
+    //  - Diffuse Density Field (Density_in, DiffusionConstant -> Density_out)
+    //  - Advect Density Field (Density_out, V_out -> Density_in )
+
+float Strength;
+float Radius;
+float3 CenterLocation;
+float3 Channel;float IDX;
+float IDY;
+
+
+[numthreads(8,8,1)]
+void InitVelocityField(uint2 id: SV_DispatchThreadID)
+{
+    // input: IDX,IDY, Velocity_in
+    // output: Velocity_out
+  
+    uint2 dim;
+    Velocity_out.GetDimensions(dim.x,dim.y);
+
+    float2 uv = (id + 0.5)/dim;
+    float2 dI = float2(IDX,IDY);
+    float2 I = float2(InputX,InputY);
+    float d = distance(uv,I);
+    float2 dUV = (dI);
+    float l = length(uv-I);
+    float3 VIN = Velocity_in[id];
+
+    dUV = dUV* (1.0f/ (l*l))*0.01;
+    Velocity_out[id] = VIN + float3(dUV,1);       
+}
+
+
+
+
+float3 mixSubtractive(float3 dIn, float3 dBrush, float amountBrush)
+{
+// these are from the scott allen burns method
+// does the mixing in reflectance curve space using a reference 
+float rho_R[36] = {0.021592459f, 0.020293111f, 0.021807906f, 0.023803297f, 0.025208132f, 0.025414957f, 0.024621282f, 0.020973705f, 0.015752802f, 0.01116804f, 0.008578277f,  0.006581877f, 0.005171723f, 0.004545205f, 0.00414512f, 0.004343112f, 0.005238155f, 0.007251939f, 0.012543656f, 0.028067132f, 0.091342277f, 0.484081092f, 0.870378324f, 0.939513128f, 0.960926994f, 0.968623763f, 0.971263883f, 0.972285819f, 0.971898742f, 0.972691859f, 0.971734812f, 0.97234454f, 0.97150339f, 0.970857997f, 0.970553866f, 0.969671404f};
+float rho_G[36] = {0.010542406f, 0.010878976f, 0.011063512f, 0.010736566f, 0.011681813f, 0.012434719f, 0.014986907f, 0.020100392f, 0.030356263f, 0.063388962f, 0.173423837f, 0.568321142f, 0.827791998f, 0.916560468f, 0.952002841f, 0.964096452f, 0.970590861f, 0.972502542f, 0.969148203f, 0.955344651f, 0.892637233f, 0.5003641f, 0.116236717f, 0.047951391f, 0.027873526f, 0.020057963f, 0.017382174f, 0.015429109f, 0.01543808f, 0.014546826f, 0.015197773f, 0.014285896f, 0.015069123f, 0.015506263f, 0.015545797f, 0.016302839f};
+float rho_B[36] = {0.967865135f, 0.968827912f, 0.967128582f, 0.965460137f, 0.963110055f, 0.962150324f, 0.960391811f, 0.958925903f, 0.953890935f, 0.925442998f, 0.817997886f, 0.42509696f , 0.167036273f, 0.078894327f, 0.043852038f, 0.031560435f, 0.024170984f, 0.020245519f, 0.01830814f, 0.016588218f, 0.01602049f, 0.015554808f, 0.013384959f, 0.012535491f, 0.011199484f, 0.011318274f, 0.011353953f, 0.012285073f, 0.012663188f, 0.012761325f, 0.013067426f, 0.013369566f, 0.013427487f, 0.01363574f, 0.013893597f, 0.014025757f};
+
+
+float T1[36] = {  .0000547813,  0.000184722, 0.000935514, 0.003096265, 0.009507714, 0.017351596, 0.022073595, 0.016353161, 0.002002407, -0.016177731,-0.033929391,-0.046158952,-0.06381706 ,-0.083911194, -0.091832385, -0.08258148 ,-0.052950086, -0.012727224, 0.037413037, 0.091701812, 0.147964686, 0.181542886, 0.210684154,  0.210058081 ,  0.181312094, 0.132064724,  0.093723787,  0.057159281,  0.033469657,  0.018235464,   0.009298756,   0.004023687,  0.002068643,  0.00109484  , 0.000454231,    0.000255925};
+float T2[36] = { -.0000465552, -0.000157894,-0.000806935,-0.002707449,-0.008477628,-0.016058258,-0.02200529 ,-0.020027434,-0.011137726,  0.003784809, 0.022138944, 0.038965605, 0.063361718, 0.095981626,  0.126280277,  0.148575844, 0.149044804,  0.14239936 , 0.122084916, 0.09544734 , 0.067421931, 0.035691251, 0.01313278 , -0.002384996 , -0.009409573,-0.009888983, -0.008379513, -0.005606153, -0.003444663, -0.001921041,  -0.000995333,  -0.000435322, -0.000224537, -0.000118838 , -0.0000493038, -.0000277789};
+float T3[36] = { 0.00032594  ,  0.001107914, 0.005677477, 0.01918448 , 0.060978641, 0.121348231, 0.184875618, 0.208804428, 0.197318551,  0.147233899, 0.091819086, 0.046485543, 0.022982618, 0.00665036 , -0.005816014, -0.012450334,-0.015524259, -0.016712927,-0.01570093 ,-0.013647887,-0.011317812,-0.008077223,-0.005863171, -0.003943485 , -0.002490472,-0.001440876, -0.000852895, -0.000458929, -0.000248389, -0.000129773,  -.0000641985,  -.0000271982, -.0000138913, -.00000735203, -.00000305024, -.00000171858};
+
+
+    // convert colors to reflectance curves 
+    float reflCurveIn[36];
+    float reflCurveBrush[36];
+    float reflCurveOut[36];
+
+    float volumeIn = length(dIn);
+    float volumeBrush = length(dBrush) + amountBrush;
+
+    for(int i=0;i<36;i++){
+        reflCurveIn[i]    = dIn.r   *rho_R[i] + dIn.g   *rho_G[i] + dIn.b   *rho_B[i];
+        reflCurveBrush[i] = dBrush.r*rho_R[i] + dBrush.g*rho_G[i] + dBrush.b*rho_B[i];
+    }
+     //float volume = dIn.r + dIn.g + dIn.b +  amountBrush;
+     float totalVolume = volumeIn + volumeBrush;
+
+     float ratio =  amountBrush/(1.0f + totalVolume); 
+
+    // mix the reflectance curves (multiply)
+    for(int j=0;j<36;j++){
+        reflCurveOut[j] = reflCurveIn[j]*(1.0f-ratio) + ratio*reflCurveBrush[j];
+    }
+
+    // convert back to RGB
+    float3 col = float3(0,0,0);
+    for(int k=0;k<36;k++){
+        col.r += T1[k]*reflCurveOut[k];
+        col.g += T2[k]*reflCurveOut[k];
+        col.b += T3[k]*reflCurveOut[k];
+    }
+
+    // volume calc
+    // amountBrush is the amount of pigment coming into the pixel
+    // dIn is the amount of volume of pigment across the entire pixel already in there
+    // volume = dIn.r + dIn.g + dIn.b
+    // total new volume = volume + amountBrush
+    // float volume = dIn.r + dIn.g + dIn.b + amountBrush;
+    // float ratio = amountBrush/volume; 
+    // float3 v = float3(  dIn.r + dBrush.r*amountBrush, 
+    //                     dIn.g + dBrush.g*amountBrush
+    //                     dIn.b + dBrush.b*amountBrush );
+    // float3 r = float3(dBrush.r*amountBrush/v.r,
+    //     dBrush.g*amountBrush/v.g
+    //     dBrush.b*amountBrush/v.b);
+
+    // float3 dOUt = 
+    //float3 dOut = dIn *(1.0f- ratio) + dBrush*ratio;
+    return col;
+}
+
+
+ // advect needs:
+ //    - input: Density_in (Buffer)
+ //    - input: Velocity_in (vector)
+ //    - input: dt (timestep)
+
+ //    - output: Density_out (Buffer) - advected
+
+
+[numthreads(8,8,1)]
+void Advect(uint2 id: SV_DispatchThreadID)
+{
+    /* perform the advection here on the current pixel */
+    uint2 dim;
+    Density_out.GetDimensions(dim.x,dim.y);
+    float2 uv = (id + 0.5)/dim;
+
+    /* get velocity */
+     float3 v = Velocity_in[id];
+     float2 vv = float2(v.x,v.y);
+     vv = vv * float2((float)dim.y/(float)dim.x, 1);
+
+    /* need to do the linear backtrace here */
+    float2 deltaUV = uv - vv*dt;
+ 
+    /* backtraced density, samplelevel will interpolate for us */
+    Density_out[id] = Density_in.SampleLevel(samplerDensity_in, deltaUV, 0);
+}
+
+
+[numthreads(8,8,1)]
+void AdvectC(uint2 id: SV_DispatchThreadID)
+{
+    /* perform the advection here on the current pixel */
+    uint2 dim;
+    Density_out.GetDimensions(dim.x,dim.y);
+    float2 uv = (id + 0.5)/dim;
+
+    /* get velocity */
+     float3 v = Velocity_in[id];
+     float2 vv = float2(v.x,v.y);
+     vv = vv * float2((float)dim.y/(float)dim.x, 1);
+
+    /* need to do the linear backtrace here */
+    float2 deltaUV = saturate(uv - vv*dt); 
+
+    // get density at our current location, 
+    float3 dprev = Density_in[id]; 
+
+    /* backtraced density, samplelevel will interpolate for us */
+    float4 DD = Density_in.SampleLevel(samplerDensity_in, deltaUV, 0);
+
+    Density_out[id] = DD;//float4(mixSubtractive(dprev,DD,0.8f),1);
+}
+
+
+    // GaussSeidelIteration()
+    //  - single iteration of the simple gauss seidel relaxation method
+    //  - input: Density_in
+    //  - Ouput: Density_out
+
+[numthreads(8,8,1)]
+void GaussSeidelIteration(uint2 id: SV_DispatchThreadID)
+{
+    uint2 dim;
+    Density_out.GetDimensions(dim.x,dim.y);
+    float4 d00 = Density_in[id];
+    float4 d10 = Density_in[id + int2(-1,0)];
+    float4 d20 = Density_in[id + int2(1,0)];
+    float4 d01 = Density_in[id + int2(0,-1)];
+    float4 d02 = Density_in[id + int2(0,1)];
+ 
+    float a = DiffusionConstant_a;
+    float cRecip = 1.0f/DiffusionConstant_c;
+    float4 val = (d00 + a*(d10 + d20 + d01 + d02))*cRecip;
+ 
+
+    Density_out[id] = val;
+      
+}
+
+
+// project has 3 partssdf
+// 1. Compute Divergence
+// 2. solve for pressure - just uses GaussSeidelIteration again
+// 3. use change in pressure to remove velocity from velocity field 
+
+[numthreads(8,8,1)]
+void Project1_Divergence(uint2 id: SV_DispatchThreadID)
+{
+    uint2 dim;
+    Divergence_out.GetDimensions(dim.x,dim.y);
+    // need:
+    // input: Velocity_in
+    // output: Divergence_out, Pressure_out
+    float v10 = Velocity_in[id + int2(1,0)].x;
+    float v20 = Velocity_in[id + int2(-1,0)].x;
+    float v01 = Velocity_in[id + int2(0,1)].y;
+    float v02 = Velocity_in[id + int2(0,-1)].y;
+    float div = -(v10 - v20 + v01 - v02)/dim.y/2;
+    Pressure_out[id] = 0.0f;
+    Divergence_out[id] = div;
+}
+
+[numthreads(8,8,1)]
+void Project3_ApplyPressure(uint2 id:SV_DispatchThreadID)
+{
+    uint2 dim;
+    Velocity_out.GetDimensions(dim.x,dim.y);
+    // inputt: Pressure_in
+    // // outpu: Velocity_out
+    float p10 = Pressure_in[id + int2(1,0)];
+    float p20 = Pressure_in[id + int2(-1,0)];
+    float p01 = Pressure_in[id + int2(0,1)];
+    float p02 = Pressure_in[id + int2(0,-1)];
+    float vx = Velocity_in[id].x;
+    float vy = Velocity_in[id].y;
+    float3 vF = float3(vx - 0.5f*(p10 - p20)*dim.x, vy - 0.5f*(p01 - p02)*dim.y, 0);
+    Velocity_out[id] = vF;
+}
+
+
+[numthreads(8,8,1)]
+void ConvertDensityToColour(uint2 id:SV_DispatchThreadID)
+{
+    // input: density texture (RGB)
+    // output: Colour based on mixed values
+    uint2 dim;
+    Colour_out.GetDimensions(dim.x,dim.y);
+    float2 uv = (id + 0.5)/dim;
+    // current density vector 
+    float4 d = Density_in[id];//.SampleLevel(samplerDensity_in, uv, 0).rgb);
+
+
+    float4 c = d.r*float4(1,0,0,1) + d.g*float4(0,1,0,1) + d.b*float4(0,0,1,1);
+    Colour_out[id] = d;
+
+}
+
+[numthreads(8,8,1)]
+void AddDensityToLocation(uint2 id:SV_DispatchThreadID)
+{
+    // input: density texture (RGB)
+    // input: Input location, channel to add density to (float3) 
+    // output: density_out
+    uint2 dim;
+    Density_out.GetDimensions(dim.x,dim.y);
+    float2 I = float2(InputX,InputY);
+    float4 d = Density_in[id];
+
+    float2 uv = (id + 0.5)/dim;
+    float dist = length(uv-I);
+    float strength = 0.0f;//1.0f/(dist*dist);
+    if(dist < 0.08) strength= (.00001f/(dist*dist));
+    // NEED TO MIX THE COLOURS HERE 
+    // only mix if the location isn't the original canvas color
+    float4 col_out;
+     
+    float4 bp = BrushTexture_in[id];//BrushTexture_in.SampleLevel(samplerBrushTexture_in, uv, 0);//*1.0f/255.0f;
+
+//    else{
+        col_out = float4(mixSubtractive(d, bp, strength),0); 
+    //}
+   
+    //float3 channel = float3(1,0,0);
+    //float3 d2 = d*(1.0f-strength) + Channel*strength;
+    Density_out[id] = col_out;
+     BrushTexture_out[id] = col_out;//float4(1,1,0,0);
+
+
+}
+
+
+
+[numthreads(8,8,1)]
+void InitDensity(uint2 id:SV_DispatchThreadID)
+{
+    // input: Colour_in (RGB)
+    // output: Density_out
+    // output: DRYNESS
+    // DRY == 1 means DRY CANVAS
+    // DRY == 0 means WET PAINT
+
+    float4 col_out = float4(1,1,1,0);//Colour_in[id];
+   // DRYNESS[id] += 0.0001f;
+    Density_out[id] = col_out;
+}
+
+
+
+
+
