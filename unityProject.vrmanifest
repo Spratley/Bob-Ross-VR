@@ -1,0 +1,16 @@
+{
+  "source": "Unity",
+  "applications": [
+    {
+      "app_key": "application.generated.unity.paintbrushsim.exe",
+      "launch_type": "url",
+      "url": "steam://launch/",
+      "action_manifest_path": "D:\\Jacob Pratleys Folder To Delete\\Advanced CG\\Paintbrush Sim\\Assets\\StreamingAssets\\SteamVR\\actions.json",
+      "strings": {
+        "en_us": {
+          "name": "Paintbrush Sim [Testing]"
+        }
+      }
+    }
+  ]
+}
