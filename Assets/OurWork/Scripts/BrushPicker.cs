@@ -6,7 +6,8 @@ using UnityEngine.UI;
 
 public class BrushPicker : MonoBehaviour
 {
-    public CS_BAXTER m_brushScript;
+    //public CS_BAXTER m_brushScript;
+    public Baxter3D m_brushScript;
     public Material m_pressureMat;
     public Material m_angleMat;
 

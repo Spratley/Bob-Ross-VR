@@ -28,6 +28,9 @@ public class SampleForFreeze : MonoBehaviour
 
     private void OnCollisionEnter(Collision collision)
     {
+        if (master == null)
+            return;
+
         // If the object is now grounded
         if (GetInAir())
             master.TryThaw();

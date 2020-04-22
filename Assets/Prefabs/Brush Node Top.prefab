@@ -15,6 +15,7 @@ GameObject:
   - component: {fileID: 8411904606557959138}
   - component: {fileID: 2842108864084086649}
   - component: {fileID: 2842108864084086654}
+  - component: {fileID: 8222323505931286952}
   m_Layer: 8
   m_Name: Brush Node Middle
   m_TagString: Untagged
@@ -221,6 +222,19 @@ ConfigurableJoint:
   m_EnablePreprocessing: 0
   m_MassScale: 1
   m_ConnectedMassScale: 1
+--- !u!114 &8222323505931286952
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2842108864084086652}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 121a4640e893591418caac5c5630f634, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  baxter3D: {fileID: 0}
 --- !u!1 &2842108864392052722
 GameObject:
   m_ObjectHideFlags: 0
@@ -237,6 +251,7 @@ GameObject:
   - component: {fileID: 4747938879063722376}
   - component: {fileID: 2842108864392052719}
   - component: {fileID: 2842108864392052716}
+  - component: {fileID: 215548264563222619}
   m_Layer: 8
   m_Name: Brush Node Top
   m_TagString: Untagged
@@ -461,6 +476,19 @@ ConfigurableJoint:
   m_EnablePreprocessing: 0
   m_MassScale: 1
   m_ConnectedMassScale: 1
+--- !u!114 &215548264563222619
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2842108864392052722}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 121a4640e893591418caac5c5630f634, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  baxter3D: {fileID: 0}
 --- !u!1 &2842108865090642013
 GameObject:
   m_ObjectHideFlags: 0
@@ -476,6 +504,7 @@ GameObject:
   - component: {fileID: 7277178982229493393}
   - component: {fileID: 2842108865090642014}
   - component: {fileID: 2842108865090642015}
+  - component: {fileID: 6571176839179474248}
   m_Layer: 8
   m_Name: Brush Node End
   m_TagString: Untagged
@@ -681,3 +710,16 @@ ConfigurableJoint:
   m_EnablePreprocessing: 0
   m_MassScale: 1
   m_ConnectedMassScale: 1
+--- !u!114 &6571176839179474248
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2842108865090642013}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 121a4640e893591418caac5c5630f634, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  baxter3D: {fileID: 0}
