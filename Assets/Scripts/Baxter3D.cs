@@ -450,7 +450,7 @@ public class Baxter3D : MonoBehaviour
 			//angle += Mathf.Ceil(-angle/360.0f)*360.0f;
 			//if(IDX < 0) angle += 2.0f*Mathf.PI;
 			//if(THETA == Mathf.PI || THETA == -Mathf.PI) THETA = 0.0f;
-			angle = m_brushAngle;
+			//angle = m_brushAngle;
 				if(IDX != 0.0f && IDY != 0.0f) THETA = angle;//alpha*THETA + (1.0f-alpha)*(angle);
 				//if(IDX == 0 ) THETA = -DIR*Mathf.PI;
 				//while(THETA > Mathf.PI) THETA -= Mathf.PI;
@@ -662,7 +662,7 @@ public class Baxter3D : MonoBehaviour
     {
         UpdateShaderBAXTER();
 
-		RefillPaint(rgb.x, rgb.y, rgb.z);
+		//RefillPaint(rgb.x, rgb.y, rgb.z);
     }
 
     void OnGUI() {
@@ -689,12 +689,12 @@ public class Baxter3D : MonoBehaviour
              Debug.Log(_bytes.Length/1024  + "Kb was saved as: " + _fullPath + " w:"+_Rtexture.width + " h:"+_Rtexture.height);
          }
 
-	public void RefillPaint(float r, float g, float b)
+	public void RefillPaint()
 	{
-		float k = 1 - Mathf.Max(r, g, b);
-		float c = (1 - r - k) / (1 - k);
-		float m = (1 - g - k) / (1 - k);
-		float y = (1 - b - k) / (1 - k);
+		float k = 1 - Mathf.Max(rgb.x, rgb.y, rgb.z);
+		float c = (1 - rgb.x - k) / (1 - k);
+		float m = (1 - rgb.y - k) / (1 - k);
+		float y = (1 - rgb.z - k) / (1 - k);
 
 		channel1.Set(m, 0, c, 0); 
 		channel2.Set(y, 0, k, 0);
