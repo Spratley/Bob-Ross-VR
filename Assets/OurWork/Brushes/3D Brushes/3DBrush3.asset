@@ -1,0 +1,23 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c213e39ca9beee241bb7da14660ae032, type: 3}
+  m_Name: 3DBrush3
+  m_EditorClassIdentifier: 
+  m_strokes:
+  - {fileID: 11400000, guid: 868a3b41ccc9bee4dbcd47713b785cf7, type: 2}
+  - {fileID: 11400000, guid: d95cc1374e8abfc4bb229fcd2633628f, type: 2}
+  - {fileID: 11400000, guid: 2507b0c64f4a1ba4ba3c087bb02a8fee, type: 2}
+  - {fileID: 11400000, guid: daa7aba17c43b3746bd70779c03eb8ba, type: 2}
+  - {fileID: 11400000, guid: 44a13f7e0a29c29498b0dbc20bbcb943, type: 2}
+  m_name: Fan.8
+  m_brushPrefab: {fileID: 473942877521654082, guid: 771362cc15b3c064092d16949982a286,
+    type: 3}

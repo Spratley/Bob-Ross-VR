@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.UI;
+using Valve.VR;
 
 public class BrushPicker : MonoBehaviour
 {
@@ -11,7 +12,7 @@ public class BrushPicker : MonoBehaviour
     public Material m_pressureMat;
     public Material m_angleMat;
 
-    public List<Brush> m_brushes;
+    public List<Brush3D> m_brushes;
 
     public float angleSpeed = 4.0f;
     public float pressureSpeed = 0.3f;
@@ -40,6 +41,15 @@ public class BrushPicker : MonoBehaviour
     public Text pressureVal;
     public Text angleVal;
 
+    [Header("3D Brush Parameters")]
+    public Transform brushContainer;
+    public Transform brushTarget;
+
+    [Header("Steam VR Input Parameters")]
+    public SteamVR_Action_Vector2 stickInput;
+    private Vector2 previousStickInput;
+    //private List<GameObject> brushObjects = new List<GameObject>();
+    private GameObject brushObject;
 
     RenderTexture CreateRenderTexture(int w, int h, int type = 0)
     {
@@ -127,6 +137,10 @@ public class BrushPicker : MonoBehaviour
 
         InitRenderTex(m_brushScript.initialBrush.width, m_brushScript.initialBrush.height);
 
+        Init3DBrush();
+
+        //Init3DBrushes();
+        //SetActiveBrush(m_activeBrush);
         //Update brush once intially.
         UpdateBrush();
     }
@@ -170,10 +184,122 @@ public class BrushPicker : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
+        EvaluateVRInput();
+
         UpdateBrush();
 
         KeyboardControls();
 
         UpdateNumDisplay();
+    }
+
+    public void EvaluateVRInput()
+    {
+        Vector2 rHand = stickInput.GetAxis(SteamVR_Input_Sources.RightHand);
+
+        if (Mathf.Abs(rHand.x) > 0.5f && Mathf.Abs(previousStickInput.x) <= 0.5f )
+            SetActiveBrush(m_activeBrush + (int)Mathf.Sign(rHand.x));
+
+        previousStickInput = rHand;
+    }
+
+    public void SetActiveBrush(int brushIndex)
+    {
+        //brushObjects[m_activeBrush].SetActive(false);
+        //SetActiveAndChildren(false, brushObjects[m_activeBrush]);
+
+        var selectedBrush = brushIndex % m_brushes.Count;
+        m_activeBrush = selectedBrush < 0 ? selectedBrush + m_brushes.Count : selectedBrush;
+
+        //brushObjects[m_activeBrush].SetActive(true);
+        //SetActiveAndChildren(true, brushObjects[m_activeBrush]);
+
+        Init3DBrush();
+    }
+
+    public void Init3DBrush()
+    {
+        if (brushObject != null)
+            Destroy(brushObject);
+
+        if (m_brushes[m_activeBrush].m_brushPrefab != null)
+        {
+            brushObject = Instantiate(m_brushes[m_activeBrush].m_brushPrefab);
+            brushObject.transform.parent = brushContainer;
+            BrushAngle ba = brushObject.GetComponent<BrushAngle>();
+            ba.brushPicker = this;
+            ba.canvas = transform;
+            RBFollowTransform rbFT = brushObject.GetComponent<RBFollowTransform>();
+            rbFT.target = brushTarget;
+        }
+        else
+        {
+            brushObject = new GameObject("NULL BRUSH");
+        }
+    }
+
+    public void Init3DBrushes()
+    {
+        foreach (var brush in m_brushes)
+        {
+            GameObject brushObject;
+            if (brush.m_brushPrefab != null)
+            {
+                brushObject = Instantiate(brush.m_brushPrefab);
+                brushObject.transform.parent = brushContainer;
+                BrushAngle ba = brushObject.GetComponent<BrushAngle>();
+                ba.brushPicker = this;
+                ba.canvas = transform;
+                RBFollowTransform rbFT = brushObject.GetComponent<RBFollowTransform>();
+                rbFT.target = brushTarget;
+            }
+            else
+            {
+                brushObject = new GameObject("NULL BRUSH");
+            }
+
+            //brushObject.SetActive(false);
+            SetActiveAndChildren(false, brushObject);
+            //brushObjects.Add(brushObject);
+        }
+    }
+
+    public void SetActiveAndChildren(bool active, GameObject obj)
+    {
+        // Firstly get children, grandchildren, etc.
+        List<GameObject> children = new List<GameObject>();
+        GetChildrenRecursive(obj.transform, children);
+        if (!active)
+            children.Reverse();
+
+        for (int i = 0; i < children.Count; i++)
+        {
+            var child = children[i];
+
+            if (i != 0)
+            {
+                Rigidbody tryRB;
+                if (child.TryGetComponent(out tryRB) && !active)
+                    tryRB.isKinematic = true;
+            }
+            child.SetActive(active);
+
+            //if (i != 0)
+            {
+                Rigidbody tryRB;
+                if (child.TryGetComponent(out tryRB)  && active)
+                    tryRB.isKinematic = false;
+            }
+        }
+    }
+
+    public void GetChildrenRecursive(Transform parent, List<GameObject> found)
+    {
+        found.Add(parent.gameObject);
+
+        for (int i = 0; i < parent.childCount; i++)
+        {
+            GetChildrenRecursive(parent.GetChild(i), found);
+        }
     }
 }

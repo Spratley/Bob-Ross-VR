@@ -1,0 +1,24 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c213e39ca9beee241bb7da14660ae032, type: 3}
+  m_Name: 3DBrush2
+  m_EditorClassIdentifier: 
+  m_strokes:
+  - {fileID: 11400000, guid: c9826c963431def4f99ea3e0630f4c4a, type: 2}
+  - {fileID: 11400000, guid: 1e48155d1941cc6498d2e7912e75f2a3, type: 2}
+  - {fileID: 11400000, guid: b007b57476e0d6b41a6a6ccd29fa62fc, type: 2}
+  - {fileID: 11400000, guid: 6fdf021b8135cb3429d50712955a6670, type: 2}
+  - {fileID: 11400000, guid: 0808f7cb522949d4aa3066a762cd523a, type: 2}
+  - {fileID: 11400000, guid: 9b6e288a6aad39b4dbebaeaf3c9b234f, type: 2}
+  m_name: Flat.16
+  m_brushPrefab: {fileID: 4989841410722623494, guid: cc5943da18440a14687c230efa64b990,
+    type: 3}

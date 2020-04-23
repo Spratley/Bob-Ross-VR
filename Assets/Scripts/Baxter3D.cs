@@ -7,6 +7,8 @@ public class Baxter3D : MonoBehaviour
 {
 	[Header("Added Parameters")]
 	public List<Transform> pointsOnCanvas;
+	public Vector3 rgb;
+
 
 	[Header("Old Parameters")]
 
@@ -123,6 +125,8 @@ public class Baxter3D : MonoBehaviour
 	public int BRUSH_WIDTH = 20;
 	[Range(0.0f,0.01f)]
 	public float PAINT_DRY_RATE=0.001f;
+
+	public float m_brushAngle;
      class FluidParameters
     {
     	static public float ViscosityInitial =  .000005f;// higher is thicker, smaller is thinner
@@ -412,40 +416,41 @@ public class Baxter3D : MonoBehaviour
 				float angle=0.0f;//
 				angle =((Mathf.Atan2(IDY,IDX)));
 				if(angle < 0) angle = Mathf.PI *2.0f - (-angle);
-				//if(angle > 2.0f*Mathf.PI) angle = angle - Mathf.PI*2.0f;
+			//if(angle > 2.0f*Mathf.PI) angle = angle - Mathf.PI*2.0f;
 
 
-				//if(DIR == -1 && angle == 0.0f) angle += Mathf.PI;
-				//float angle = 0.0f;
-			
-
-				// if(IDX > 0 && IDY > 0){
-				// 	// Q1
-				// 	angle = Mathf.Abs(Mathf.Atan2(IDY,IDX));
-				// }
-				// if(IDX < 0 && IDY > 0){
-				// 	// Q2
-				// 	angle = Mathf.Abs(Mathf.Atan2(IDY,IDX));
-				// }				
-
-				// if(IDX < 0 && IDY < 0){
-				// 	// Q3
-				// 	angle = Mathf.PI+Mathf.Abs(Mathf.Atan2(-IDY,-IDX));
-				// }
-				// if(IDX > 0 && IDY < 0){
-				// 	// Q4
-				// 	angle = Mathf.PI + Mathf.Abs(Mathf.Atan2(-IDY,-IDX));//Mathf.Abs(Mathf.Atan2(-IDY,IDX));
-				// }
+			//if(DIR == -1 && angle == 0.0f) angle += Mathf.PI;
+			//float angle = 0.0f;
 
 
+			// if(IDX > 0 && IDY > 0){
+			// 	// Q1
+			// 	angle = Mathf.Abs(Mathf.Atan2(IDY,IDX));
+			// }
+			// if(IDX < 0 && IDY > 0){
+			// 	// Q2
+			// 	angle = Mathf.Abs(Mathf.Atan2(IDY,IDX));
+			// }				
 
-				//if(DIR == 1) 
-				// /angle = Mathf.Atan2(IDY,IDX);
-				//if(DIR == -1) angle = Mathf.PI+Mathf.Atan2(-IDY,-IDX);
-				//if(IDX == 0.0f) angle = (DIR<0)? -Mathf.PI/2.0f: Mathf.PI/2.0f;
-				//angle += Mathf.Ceil(-angle/360.0f)*360.0f;
-				//if(IDX < 0) angle += 2.0f*Mathf.PI;
-				//if(THETA == Mathf.PI || THETA == -Mathf.PI) THETA = 0.0f;
+			// if(IDX < 0 && IDY < 0){
+			// 	// Q3
+			// 	angle = Mathf.PI+Mathf.Abs(Mathf.Atan2(-IDY,-IDX));
+			// }
+			// if(IDX > 0 && IDY < 0){
+			// 	// Q4
+			// 	angle = Mathf.PI + Mathf.Abs(Mathf.Atan2(-IDY,-IDX));//Mathf.Abs(Mathf.Atan2(-IDY,IDX));
+			// }
+
+
+
+			//if(DIR == 1) 
+			// /angle = Mathf.Atan2(IDY,IDX);
+			//if(DIR == -1) angle = Mathf.PI+Mathf.Atan2(-IDY,-IDX);
+			//if(IDX == 0.0f) angle = (DIR<0)? -Mathf.PI/2.0f: Mathf.PI/2.0f;
+			//angle += Mathf.Ceil(-angle/360.0f)*360.0f;
+			//if(IDX < 0) angle += 2.0f*Mathf.PI;
+			//if(THETA == Mathf.PI || THETA == -Mathf.PI) THETA = 0.0f;
+			angle = m_brushAngle;
 				if(IDX != 0.0f && IDY != 0.0f) THETA = angle;//alpha*THETA + (1.0f-alpha)*(angle);
 				//if(IDX == 0 ) THETA = -DIR*Mathf.PI;
 				//while(THETA > Mathf.PI) THETA -= Mathf.PI;
@@ -656,6 +661,8 @@ public class Baxter3D : MonoBehaviour
     void Update()
     {
         UpdateShaderBAXTER();
+
+		RefillPaint(rgb.x, rgb.y, rgb.z);
     }
 
     void OnGUI() {
@@ -681,5 +688,18 @@ public class Baxter3D : MonoBehaviour
              System.IO.File.WriteAllBytes(_fullPath, _bytes);
              Debug.Log(_bytes.Length/1024  + "Kb was saved as: " + _fullPath + " w:"+_Rtexture.width + " h:"+_Rtexture.height);
          }
+
+	public void RefillPaint(float r, float g, float b)
+	{
+		float k = 1 - Mathf.Max(r, g, b);
+		float c = (1 - r - k) / (1 - k);
+		float m = (1 - g - k) / (1 - k);
+		float y = (1 - b - k) / (1 - k);
+
+		channel1.Set(m, 0, c, 0); 
+		channel2.Set(y, 0, k, 0);
+
+		BRUSH_PAINT_STRENGTH = INITIAL_BRUSH_PAINT_STRENGTH;
+	}
 
 }

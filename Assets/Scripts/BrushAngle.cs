@@ -10,5 +10,7 @@ public class BrushAngle : MonoBehaviour
     private void Update()
     {
         brushPicker.m_angle = 90 - Mathf.Clamp(Vector3.Angle(-transform.up, canvas.forward), 0, 90);
+
+        brushPicker.m_brushScript.m_brushAngle = Vector3.Angle(transform.right, canvas.right);
     }
 }
